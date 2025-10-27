@@ -5,7 +5,7 @@ A zero-dependency Laravel installer powered by Node.js.
 ## Usage
 
 ```bash
-npx create-laravel-stack my-app
+npx create-s6-app my-app
 cd my-app
 npm run dev
 ```
