@@ -1,16 +1,16 @@
 {
-  "name": "create-laravel-app",
+  "name": "create-s6-app",
   "version": "1.0.0",
   "description": "Zero-dependency Laravel installer powered by Node.js",
   "main": "src/index.js",
   "bin": {
-    "create-laravel-app": "bin/cli.js"
+    "create-s6-app": "bin/cli.js"
   },
   "scripts": {
-    "test": "node bin/cli.js test-laravel-app && cd test-laravel-app && ../bin/php artisan serve"
+    "test": "node bin/cli.js test-s6-app && cd test-s6-app && ../bin/php artisan serve"
   },
   "author": "Sourav Dutt <sdutt12139@gmail.com>",
-  "keywords": ["laravel", "php", "installer", "node", "create-laravel-app"],
+  "keywords": ["laravel", "php", "installer", "node", "create-s6-app"],
   "license": "ISC",
   "type": "module",
   "dependencies": {
