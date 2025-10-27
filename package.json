@@ -1,6 +1,6 @@
 {
   "name": "create-s6-app",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Zero-dependency Laravel installer powered by Node.js",
   "main": "src/index.js",
   "bin": {
