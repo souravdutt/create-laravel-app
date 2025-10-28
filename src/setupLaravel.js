@@ -163,7 +163,7 @@ async function main() {
 
 👉 Next steps:
    cd ${appName}
-   ./bin/php artisan serve
+   ../bin/php artisan serve
 
 (No system PHP or Composer required 🎉)
 `);

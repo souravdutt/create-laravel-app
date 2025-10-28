@@ -12,7 +12,7 @@ export async function main(args) {
     console.log(`
 Next steps:
   cd ${projectName}
-  ./bin/php artisan serve
+  ../bin/php artisan serve
 
 ✨ Enjoy coding without needing system PHP or Composer!
     `);
