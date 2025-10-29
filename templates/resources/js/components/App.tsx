@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { fetchNotes, createNote, updateNote as apiUpdateNote, deleteNote as apiDeleteNote } from '../api/client';
+import { api } from '../api/client';
 
 type Note = {
   id: number;
@@ -26,8 +26,13 @@ export default function App() {
   }, []);
 
   async function load() {
-    const data = await fetchNotes();
-    setNotes(data);
+    try {
+      const data = await api.getApiNotes();
+      setNotes(data as Note[]);
+    } catch (error) {
+      console.error('Failed to load notes:', error);
+      setNotes([]);
+    }
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -35,15 +40,19 @@ export default function App() {
     const value = input.trim();
     if (!value) return;
 
-    if (editingId) {
-      await apiUpdateNote(editingId, {content: value});
-      setEditingId(null);
-    } else {
-      await createNote({content: value});
-    }
+    try {
+      if (editingId) {
+        await api.putApiNotesById(editingId, {content: value});
+        setEditingId(null);
+      } else {
+        await api.postApiNotes({content: value});
+      }
 
-    setInput('');
-    await load();
+      setInput('');
+      await load();
+    } catch (error) {
+      console.error('Failed to save note:', error);
+    }
   }
 
   async function handleEdit(n: Note) {
@@ -53,8 +62,12 @@ export default function App() {
 
   async function handleDelete(id: number) {
     if (!confirm('Delete note?')) return;
-    await apiDeleteNote(id);
-    await load();
+    try {
+      await api.deleteApiNotesById(id);
+      await load();
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+    }
   }
 
   return (
