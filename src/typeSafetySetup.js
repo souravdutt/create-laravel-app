@@ -280,8 +280,10 @@ async function installNodePackages(projectPath) {
   packageJson.scripts = packageJson.scripts || {};
   packageJson.scripts["dev"] = "artisan serve & vite";
   packageJson.scripts["serve"] = "artisan serve";
+  packageJson.scripts["migrate"] = "artisan migrate";
   packageJson.scripts["type-check"] = "tsc --noEmit";
   packageJson.scripts["gen:types"] = "composer gen:types";
+  packageJson.scripts["watch:types"] = "artisan typescript:watch";
 
   await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
 

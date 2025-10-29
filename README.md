@@ -12,18 +12,20 @@ Zero-dependency Laravel installer with hybrid type safety (PHP ↔ TypeScript). 
 ### Standard Installation (Type-Safe by Default)
 
 ```bash
-npx create-s6-app my-app
+npm create s6-app@latest my-app
 cd my-app
 npm run gen:types
+npm run migrate
 npm run dev
 ```
 
 ### Without Type Safety (Not Recommended)
 
 ```bash
-npx create-s6-app my-app --no-typesafe
+npm create s6-app@latest my-app --no-typesafe
 cd my-app
-npx artisan serve
+npm run migrate
+npm run dev
 ```
 
 Access your app at:
@@ -44,8 +46,8 @@ Access your app at:
 
 - [create-s6-app](#create-s6-app)
   - [Getting Started](#getting-started)
-    - [Basic Laravel Installation](#basic-laravel-installation)
-    - [With Type Safety (Recommended)](#with-type-safety-recommended)
+    - [Standard Installation (Type-Safe by Default)](#standard-installation-type-safe-by-default)
+    - [Without Type Safety (Not Recommended)](#without-type-safety-not-recommended)
   - [Features](#features)
   - [Table of Contents](#table-of-contents)
   - [Type Safety System](#type-safety-system)
@@ -111,7 +113,7 @@ const users = await api.getUsers();
 
 ```bash
 # Start watch mode (auto-regenerates on DTO changes)
-npx artisan typescript:watch
+npm run watch:types
 
 # In another terminal, start dev server
 npm run dev
@@ -124,8 +126,12 @@ npm run dev
 **Available Commands**:
 - `npm run dev` - Start Laravel + Vite dev servers
 - `npm run serve` - Start Laravel server only
+- `npm run migrate` - Run database migrations
 - `npm run gen:types` - Generate TypeScript types from PHP
 - `npm run type-check` - TypeScript type checking
+- `npm run watch:types` - Watch mode for auto-regeneration
+
+For advanced usage, you can still use:
 - `npx artisan <command>` - Run any Laravel Artisan command
 - `npx composer <command>` - Run any Composer command
 
