@@ -1,6 +1,6 @@
 {
   "name": "create-s6-app",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Zero-dependency Laravel installer with React, TypeScript, Tailwind & full-stack type safety (PHP ↔ TypeScript)",
   "main": "src/index.js",
   "bin": {
