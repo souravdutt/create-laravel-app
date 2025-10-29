@@ -13,19 +13,12 @@ Zero-dependency Laravel installer with hybrid type safety (PHP ↔ TypeScript). 
 
 ```bash
 npm create s6-app@latest my-app
-cd my-app
-npm run gen:types
-npm run migrate
-npm run dev
 ```
 
 ### Without Type Safety (Not Recommended)
 
 ```bash
 npm create s6-app@latest my-app --no-typesafe
-cd my-app
-npm run migrate
-npm run dev
 ```
 
 Access your app at:

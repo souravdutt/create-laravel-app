@@ -1,14 +1,14 @@
 {
   "name": "create-s6-app",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Zero-dependency Laravel installer with React, TypeScript, Tailwind & full-stack type safety (PHP ↔ TypeScript)",
   "main": "src/index.js",
   "bin": {
     "create-s6-app": "bin/cli.js"
   },
   "scripts": {
-    "test": "node bin/cli.js test-s6-app && cd test-s6-app && npx artisan migrate:fresh && npm run dev",
-    "test:no-typesafe": "node bin/cli.js test-s6-app --no-typesafe && cd test-s6-app && npx artisan migrate:fresh && npm run dev"
+    "test": "node bin/cli.js test-s6-app",
+    "test:no-typesafe": "node bin/cli.js test-s6-app --no-typesafe"
   },
   "author": "Sourav Dutt <sdutt12139@gmail.com>",
   "keywords": [

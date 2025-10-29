@@ -48,16 +48,6 @@ export async function setupTypeSafety(projectPath, phpBin, composerBin) {
     console.log("  • Type-safe API client");
     console.log("  • Watch mode for auto-regeneration\n");
 
-    console.log(chalk.yellow("📝 Next steps:\n"));
-    console.log("  1. Run type generation:");
-    console.log(chalk.gray("     php artisan typescript:transform"));
-    console.log(chalk.gray("     php artisan gen:zod-schemas"));
-    console.log(chalk.gray("     php artisan gen:ts-client\n"));
-    console.log("  2. Start watch mode (optional):");
-    console.log(chalk.gray("     php artisan typescript:watch\n"));
-    console.log("  3. Start dev server:");
-    console.log(chalk.gray("     npm run dev\n"));
-
   } catch (error) {
     spinner.fail(chalk.red("Type safety setup failed"));
     throw error;
