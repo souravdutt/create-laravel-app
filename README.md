@@ -9,21 +9,21 @@ Zero-dependency Laravel installer with hybrid type safety (PHP ↔ TypeScript). 
 
 ## Getting Started
 
-### Basic Laravel Installation
+### Standard Installation (Type-Safe by Default)
 
 ```bash
 npx create-s6-app my-app
 cd my-app
-../bin/php artisan serve
-```
-
-### With Type Safety (Recommended)
-
-```bash
-npx create-s6-app my-app --with-typesafe
-cd my-app
 npm run gen:types
 npm run dev
+```
+
+### Without Type Safety (Not Recommended)
+
+```bash
+npx create-s6-app my-app --no-typesafe
+cd my-app
+npx artisan serve
 ```
 
 Access your app at:
@@ -66,7 +66,9 @@ Access your app at:
 
 ## Type Safety System
 
-When you create a project with `--with-typesafe`, you get a fully configured hybrid type safety system inspired by create-t3-app.
+Type safety is **enabled by default** in all new projects. This gives you a fully configured hybrid type safety system inspired by create-t3-app.
+
+> **Note**: Use `--no-typesafe` to skip type safety setup (not recommended for production projects).
 
 ### How It Works
 

@@ -1,14 +1,14 @@
 {
   "name": "create-s6-app",
-  "version": "1.0.6",
-  "description": "Zero-dependency Laravel installer with hybrid type safety (PHP ↔ TypeScript)",
+  "version": "1.1.0",
+  "description": "Zero-dependency Laravel installer with type safety by default (PHP ↔ TypeScript)",
   "main": "src/index.js",
   "bin": {
     "create-s6-app": "bin/cli.js"
   },
   "scripts": {
-    "test": "node bin/cli.js test-s6-app && cd test-s6-app && ../bin/php artisan serve",
-    "test:typesafe": "node bin/cli.js test-typesafe-app --with-typesafe"
+    "test": "node bin/cli.js test-s6-app && cd test-s6-app && npm run dev",
+    "test:no-typesafe": "node bin/cli.js test-basic-app --no-typesafe"
   },
   "author": "Sourav Dutt <sdutt12139@gmail.com>",
   "keywords": [

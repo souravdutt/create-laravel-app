@@ -7,14 +7,16 @@ import { setupTypeSafety } from "./typeSafetySetup.js";
 export async function main(args) {
   // Parse arguments
   const projectName = args.find(arg => !arg.startsWith('--'));
-  const withTypeSafety = args.includes('--with-typesafe') || args.includes('--typesafe');
+  // Type safety is now DEFAULT - users can opt-out with --no-typesafe
+  const skipTypeSafety = args.includes('--no-typesafe') || args.includes('--skip-typesafe');
+  const withTypeSafety = !skipTypeSafety;
   
   if (!projectName) {
     console.log(chalk.red("Error: Please provide a project name"));
     console.log(chalk.yellow("\nUsage:"));
     console.log("  npx create-s6-app <project-name> [options]");
     console.log("\nOptions:");
-    console.log("  --with-typesafe    Enable hybrid type safety (PHP ↔ TypeScript)");
+    console.log("  --no-typesafe      Skip hybrid type safety setup (not recommended)");
     process.exit(1);
   }
 
@@ -36,11 +38,11 @@ export async function main(args) {
     if (withTypeSafety) {
       console.log("  npm run gen:types");
       console.log("  npm run dev");
+      console.log(chalk.gray("\n💡 Type safety enabled by default. Use --no-typesafe to skip.\n"));
     } else {
-      console.log("  ../bin/php artisan serve");
+      console.log("  npx artisan serve");
+      console.log(chalk.gray("\n💡 Type safety skipped. Remove --no-typesafe for full features.\n"));
     }
-    
-    console.log(chalk.gray("\n💡 Tip: Run with --with-typesafe for hybrid type safety\n"));
 
   } catch (err) {
     spinner.fail(chalk.red("Setup failed."));
