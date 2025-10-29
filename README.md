@@ -1,6 +1,6 @@
 # create-s6-app
 
-Zero-dependency Laravel installer powered by Node.js. Run Laravel projects anywhere without installing PHP or Composer system-wide.
+Zero-dependency Laravel installer with hybrid type safety (PHP ↔ TypeScript). Run Laravel projects anywhere without installing PHP or Composer system-wide.
 
 [![NPM version](https://img.shields.io/npm/v/create-s6-app.svg)](https://www.npmjs.com/package/create-s6-app)
 [![Downloads](https://img.shields.io/npm/dm/create-s6-app.svg)](https://www.npmjs.com/package/create-s6-app)
@@ -9,7 +9,7 @@ Zero-dependency Laravel installer powered by Node.js. Run Laravel projects anywh
 
 ## Getting Started
 
-To scaffold a Laravel app using `create-s6-app`, run:
+### Basic Laravel Installation
 
 ```bash
 npx create-s6-app my-app
@@ -17,11 +17,40 @@ cd my-app
 ../bin/php artisan serve
 ```
 
+### With Type Safety (Recommended)
+
+```bash
+npx create-s6-app my-app --with-typesafe
+cd my-app
+npm run gen:types
+npm run dev
+```
+
+Access your app at:
+- **Laravel API**: http://127.0.0.1:8000
+- **Vite Dev Server**: http://localhost:5173
+
+## Features
+
+✨ **Zero System Dependencies**: No need for system PHP or Composer  
+🔒 **Hybrid Type Safety**: PHP DTOs automatically converted to TypeScript + Zod schemas  
+🚀 **Auto-generated API Client**: Type-safe fetch wrappers from Laravel routes  
+⚡ **Watch Mode**: Auto-regenerate types on DTO changes  
+🎯 **Runtime Validation**: Zod-powered validation for all API responses  
+📦 **Batteries Included**: TypeScript, Vite, and all tooling pre-configured  
+🛠️ **Unified Commands**: Use `npm run` for everything - no need to remember PHP/Composer paths
+
 ## Table of Contents
 
 - [create-s6-app](#create-s6-app)
   - [Getting Started](#getting-started)
+    - [Basic Laravel Installation](#basic-laravel-installation)
+    - [With Type Safety (Recommended)](#with-type-safety-recommended)
+  - [Features](#features)
   - [Table of Contents](#table-of-contents)
+  - [Type Safety System](#type-safety-system)
+    - [How It Works](#how-it-works)
+    - [Example Workflow](#example-workflow)
   - [The S6 Vision](#the-s6-vision)
   - [S6 Principles](#s6-principles)
     - [1. Solve Real Problems](#1-solve-real-problems)
@@ -34,6 +63,76 @@ cd my-app
   - [Community](#community)
   - [Contributors](#contributors)
   - [License](#license)
+
+## Type Safety System
+
+When you create a project with `--with-typesafe`, you get a fully configured hybrid type safety system inspired by create-t3-app.
+
+### How It Works
+
+1. **Define DTOs in PHP**:
+```php
+#[TypeScript]
+class UserDto {
+    public function __construct(
+        public int $id,
+        public string $name,
+        public string $email,
+    ) {}
+}
+```
+
+2. **Use DTOs in Controllers**:
+```php
+public function index(): JsonResponse {
+    $users = User::all()->map(fn($u) => new UserDto(...));
+    return response()->json($users);
+}
+```
+
+3. **Generate Types**:
+```bash
+npm run gen:types
+```
+
+4. **Use Type-Safe API Client**:
+```typescript
+import { api } from '@/api/client';
+
+const users = await api.getUsers();
+// ✅ Fully typed as UserDto[]
+// ✅ Runtime validated with Zod
+// ✅ Autocomplete and type checking
+```
+
+### Example Workflow
+
+```bash
+# Start watch mode (auto-regenerates on DTO changes)
+npx artisan typescript:watch
+
+# In another terminal, start dev server
+npm run dev
+
+# Now edit any DTO in app/DTO/
+# Types regenerate automatically
+# TypeScript errors appear instantly in VSCode
+```
+
+**Available Commands**:
+- `npm run dev` - Start Laravel + Vite dev servers
+- `npm run serve` - Start Laravel server only
+- `npm run gen:types` - Generate TypeScript types from PHP
+- `npm run type-check` - TypeScript type checking
+- `npx artisan <command>` - Run any Laravel Artisan command
+- `npx composer <command>` - Run any Composer command
+
+**Generated Files**:
+- `resources/js/types/UserDto.ts` - Zod schema + TypeScript interface
+- `resources/js/api/client.ts` - Type-safe API client
+- `resources/js/types/generated.d.ts` - Additional type definitions
+
+See the `TYPE_SAFETY.md` guide (generated in your project) for complete documentation.
 
 ## The S6 Vision
 

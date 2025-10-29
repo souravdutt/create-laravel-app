@@ -1,0 +1,10 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "scripts": {
+        "gen:types": [
+            "@php artisan typescript:transform",
+            "@php artisan gen:zod-schemas",
+            "@php artisan gen:ts-client"
+        ]
+    }
+}

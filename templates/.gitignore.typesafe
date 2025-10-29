@@ -1,0 +1,7 @@
+# Type Safety Generated Files
+/resources/js/types/generated.d.ts
+/resources/js/api/client.ts
+
+# Keep these directories but ignore generated content
+!/resources/js/types/.gitkeep
+!/resources/js/api/.gitkeep

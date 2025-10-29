@@ -134,6 +134,13 @@ export async function setupLaravel(appName) {
   await setupBinaries();
   await verifyPHP();
   await createLaravelApp(appName);
+
+  // Return paths for further setup
+  return {
+    projectPath: path.resolve(process.cwd(), appName),
+    phpBin: PHP_BIN,
+    composerBin: COMPOSER_BIN,
+  };
 }
 
 // ---------------- VERIFY PHP ----------------
