@@ -1,0 +1,229 @@
+name: Cross-Platform Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  test-installation:
+    name: Test on ${{ matrix.os }} (${{ matrix.mode }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    
+    strategy:
+      fail-fast: false # Don't cancel other jobs if one fails
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        mode: [typesafe, no-typesafe]
+        node-version: [18.x, 20.x]
+        # Exclude some combinations to save CI time
+        exclude:
+          - os: ubuntu-latest
+            node-version: 18.x
+            mode: no-typesafe
+          - os: macos-latest
+            node-version: 18.x
+            mode: no-typesafe
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter (if available)
+        run: npm run lint || echo "No lint script found"
+        continue-on-error: true
+
+      - name: Create test project (TypeSafe mode)
+        if: matrix.mode == 'typesafe'
+        run: node bin/cli.js test-s6-app --ci
+        timeout-minutes: 10
+
+      - name: Create test project (No-TypeSafe mode)
+        if: matrix.mode == 'no-typesafe'
+        run: node bin/cli.js test-s6-app --no-typesafe --ci
+        timeout-minutes: 10
+
+      - name: Verify project structure
+        shell: bash
+        run: |
+          echo "Checking project structure..."
+          test -d test-s6-app || exit 1
+          test -f test-s6-app/package.json || exit 1
+          test -f test-s6-app/composer.json || exit 1
+          test -f test-s6-app/.env || exit 1
+          test -f test-s6-app/artisan || exit 1
+          echo "✓ Project structure verified"
+
+      - name: Verify React setup
+        shell: bash
+        working-directory: test-s6-app
+        run: |
+          echo "Checking React setup..."
+          if [ "${{ matrix.mode }}" = "typesafe" ]; then
+            test -f resources/js/app.tsx || exit 1
+            test -f resources/js/components/App.tsx || exit 1
+            test -f resources/js/api/client.ts || exit 1
+            test -f tsconfig.json || exit 1
+            echo "✓ TypeScript React files verified"
+          else
+            test -f resources/js/app.jsx || exit 1
+            test -f resources/js/components/App.jsx || exit 1
+            test -f resources/js/api/client.js || exit 1
+            echo "✓ JavaScript React files verified"
+          fi
+
+      - name: Verify Laravel setup
+        shell: bash
+        working-directory: test-s6-app
+        run: |
+          echo "Checking Laravel setup..."
+          test -f app/Models/Note.php || exit 1
+          test -f app/Http/Controllers/NoteController.php || exit 1
+          test -f routes/api.php || exit 1
+          test -d database/migrations || exit 1
+          echo "✓ Laravel backend files verified"
+
+      - name: Check npm scripts
+        shell: bash
+        working-directory: test-s6-app
+        run: |
+          echo "Verifying npm scripts..."
+          npm run --silent 2>&1 | grep -q "migrate" || exit 1
+          npm run --silent 2>&1 | grep -q "dev" || exit 1
+          if [ "${{ matrix.mode }}" = "typesafe" ]; then
+            npm run --silent 2>&1 | grep -q "gen:types" || exit 1
+            npm run --silent 2>&1 | grep -q "type-check" || exit 1
+            echo "✓ TypeScript scripts verified"
+          fi
+          echo "✓ npm scripts verified"
+
+      - name: Install project dependencies
+        working-directory: test-s6-app
+        run: npm install
+        timeout-minutes: 5
+
+      - name: Run TypeScript type check (typesafe only)
+        if: matrix.mode == 'typesafe'
+        working-directory: test-s6-app
+        run: npm run type-check
+        continue-on-error: true # Don't fail if there are type errors initially
+
+      - name: Check database migrations exist
+        shell: bash
+        working-directory: test-s6-app
+        run: |
+          ls -la database/migrations/*.php
+          test -f database/database.sqlite || touch database/database.sqlite
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-failure-${{ matrix.os }}-${{ matrix.mode }}-node${{ matrix.node-version }}
+          path: |
+            test-s6-app/
+            !test-s6-app/node_modules/
+            !test-s6-app/vendor/
+          retention-days: 7
+
+  test-npm-package:
+    name: Test npm package installation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Pack npm package
+        run: npm pack
+
+      - name: Install packed package globally
+        run: npm install -g create-s6-app-*.tgz
+
+      - name: Test global installation
+        run: |
+          create-s6-app test-global-app
+          test -d test-global-app
+
+      - name: Clean up
+        run: npm uninstall -g create-s6-app
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for security vulnerabilities
+        run: npm audit --production
+        continue-on-error: true
+
+      - name: Check package size
+        run: |
+          npm pack --dry-run
+          SIZE=$(npm pack --dry-run 2>&1 | grep -o '[0-9.]* kB' | awk '{print $1}')
+          echo "Package size: ${SIZE}kB"
+          if (( $(echo "$SIZE > 100" | bc -l) )); then
+            echo "⚠️  Warning: Package size is large (${SIZE}kB)"
+          fi
+
+  release-check:
+    name: Release Readiness Check
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Verify package.json
+        run: |
+          node -e "const pkg = require('./package.json'); 
+          console.log('Package:', pkg.name, '@', pkg.version);
+          console.log('License:', pkg.license);
+          console.log('Repository:', pkg.repository);"
+
+      - name: Check README exists
+        run: test -f README.md
+
+      - name: Check LICENSE exists
+        run: test -f LICENSE
+
+      - name: Verify publishable files
+        run: npm pack --dry-run

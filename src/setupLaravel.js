@@ -16,6 +16,7 @@ import { execSync } from "child_process";
 import { fileURLToPath } from "url";
 import * as tar from "tar";
 import AdmZip from "adm-zip";
+import ora from "ora";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -39,19 +40,39 @@ function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
-// Download file using Node.js https module
-async function downloadFile(url, dest) {
+// Download file using Node.js https module with progress indicator
+async function downloadFile(url, dest, label = "Downloading") {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(dest);
+    
     https.get(url, (response) => {
       // Handle redirects
       if (response.statusCode === 302 || response.statusCode === 301) {
-        return downloadFile(response.headers.location, dest).then(resolve).catch(reject);
+        return downloadFile(response.headers.location, dest, label).then(resolve).catch(reject);
       }
+      
+      const totalSize = parseInt(response.headers['content-length'], 10);
+      let downloadedSize = 0;
+      const spinner = ora(`${label} 0%`).start();
+      
+      response.on('data', (chunk) => {
+        downloadedSize += chunk.length;
+        
+        if (totalSize) {
+          const percentage = ((downloadedSize / totalSize) * 100).toFixed(1);
+          const downloadedMB = (downloadedSize / 1024 / 1024).toFixed(1);
+          const totalMB = (totalSize / 1024 / 1024).toFixed(1);
+          spinner.text = `${label} ${percentage}% (${downloadedMB} MB / ${totalMB} MB)`;
+        } else {
+          const downloadedMB = (downloadedSize / 1024 / 1024).toFixed(1);
+          spinner.text = `${label} ${downloadedMB} MB`;
+        }
+      });
       
       response.pipe(file);
       file.on('finish', () => {
         file.close();
+        spinner.succeed(`${label} complete!`);
         resolve();
       });
     }).on('error', (err) => {
@@ -81,11 +102,10 @@ async function setupBinaries() {
   const url = `${BASE_URL}/${filename}`;
 
   if (!fs.existsSync(PHP_BIN)) {
-    log(`⬇️  Downloading PHP binary for ${os}...`);
     const archivePath = path.join(BIN_DIR, filename);
-    await downloadFile(url, archivePath);
+    await downloadFile(url, archivePath, `Downloading PHP binary for ${os}`);
 
-    log("📦 Extracting PHP binary...");
+    const extractSpinner = ora("Extracting PHP binary...").start();
 
     if (ext === "zip") {
       // Use adm-zip for Windows
@@ -109,27 +129,25 @@ async function setupBinaries() {
     );
     
     if (!phpFile) {
-      error("❌ PHP binary not found after extraction!");
+      extractSpinner.fail("PHP binary not found after extraction!");
       process.exit(1);
     }
     
     const phpPath = path.join(BIN_DIR, phpFile);
     fs.renameSync(phpPath, PHP_BIN);
     fs.chmodSync(PHP_BIN, 0o755);
+    extractSpinner.succeed("PHP binary extracted!");
   } else {
-    log("✅ PHP binaries already exist. Skipping download.\n");
+    const skipSpinner = ora("PHP binaries already exist").succeed();
   }
 
   if (!fs.existsSync(COMPOSER_BIN)) {
     // Download Composer
-    log("⬇️  Downloading Composer...");
-    await downloadFile(COMPOSER_URL, COMPOSER_BIN);
+    await downloadFile(COMPOSER_URL, COMPOSER_BIN, "Downloading Composer");
     fs.chmodSync(COMPOSER_BIN, 0o755);
   } else {
-    log("✅ Composer binary already exists. Skipping download.\n");
+    const skipSpinner = ora("Composer binary already exists").succeed();
   }
-
-  log("✅ PHP + Composer ready!\n");
 }
 
 // ---------------- CREATE LARAVEL APP ----------------
@@ -146,13 +164,13 @@ async function createLaravelApp(appName) {
   }
 
   ensureDir(targetDir);
-  log(`🚀 Creating Laravel app: ${appName}`);
+  const createSpinner = ora(`Creating Laravel app: ${appName}`).start();
 
   try {
     run(`${PHP_BIN} ${COMPOSER_BIN} create-project laravel/laravel ${targetDir}`);
-    log("✅ Laravel project created successfully!");
+    createSpinner.succeed("Laravel project created successfully!");
   } catch (err) {
-    error("❌ Installation failed.");
+    createSpinner.fail("Installation failed.");
     console.error(err.message);
     process.exit(1);
   }
@@ -160,8 +178,6 @@ async function createLaravelApp(appName) {
 
 // ---------------- EXPORTED FUNCTION ----------------
 export async function setupLaravel(appName) {
-  log("\n⚙️  Setting up Laravel installer...");
-
   await setupBinaries();
   await verifyPHP();
   await createLaravelApp(appName);

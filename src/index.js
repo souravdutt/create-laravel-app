@@ -182,6 +182,7 @@ export async function main(args) {
   // Type safety is now DEFAULT - users can opt-out with --no-typesafe
   const skipTypeSafety = args.includes('--no-typesafe') || args.includes('--skip-typesafe');
   const withTypeSafety = !skipTypeSafety;
+  const ciMode = args.includes('--ci');
   
   if (!projectName) {
     console.log(chalk.red("Error: Please provide a project name"));
@@ -189,49 +190,54 @@ export async function main(args) {
     console.log("  npx create-s6-app <project-name> [options]");
     console.log("\nOptions:");
     console.log("  --no-typesafe      Skip hybrid type safety setup (not recommended)");
+    console.log("  --ci               Skip dev server (for CI/CD testing)");
     process.exit(1);
   }
 
-  const spinner = ora("Setting up Laravel environment...").start();
-
   try {
     const { projectPath, phpBin, composerBin } = await setupLaravel(projectName);
-    spinner.succeed(chalk.green(`Laravel project '${projectName}' created successfully!`));
 
     // Setup type safety if requested, otherwise setup basic React
     if (withTypeSafety) {
       await setupTypeSafety(projectPath, phpBin, composerBin);
     } else {
-      spinner.text = "Setting up React with JavaScript...";
+      const reactSpinner = ora("Setting up React with JavaScript...").start();
       await setupBasicReact(projectPath);
-      spinner.succeed(chalk.green("React setup complete!"));
+      reactSpinner.succeed(chalk.green("React setup complete!"));
     }
 
       console.log(chalk.cyan("\n✨ Setup complete!\n"));
-      console.log(chalk.yellow("Next steps:\n"));
-      console.log(`  cd ${projectName}`);
-      await execa("npm", ["install"], { cwd: projectPath, stdio: "inherit" });
-
-      if (withTypeSafety) {
-        console.log("  Generating types:");
-        // run command here:
-        await execa("npm", ["run", "gen:types"], { cwd: projectPath, stdio: "inherit" });
-        console.log("  Running migrations:");
-        await execa("npm", ["run", "migrate"], { cwd: projectPath, stdio: "inherit" });
-        console.log("  Running dev server:");
-        await execa("npm", ["run", "dev"], { cwd: projectPath, stdio: "inherit" });
-        console.log(chalk.gray("\n💡 Type safety enabled by default. Use --no-typesafe to skip.\n"));
+      
+      if (ciMode) {
+        console.log(chalk.yellow("CI Mode: Skipping dependencies, migrations, and dev server\n"));
+        console.log(chalk.green("✓ Project created successfully for CI/CD testing"));
+        console.log(chalk.gray(`\nTo run locally: cd ${projectName} && npm install && npm run migrate && npm run dev\n`));
       } else {
-        console.log("  Running migrations:");
-        await execa("npm", ["run", "migrate"], { cwd: projectPath, stdio: "inherit" });
-        console.log("  Running dev server:");
-        await execa("npm", ["run", "dev"], { cwd: projectPath, stdio: "inherit" });
-        console.log(chalk.gray("\n💡 JavaScript mode (no TypeScript). Remove --no-typesafe for full type safety.\n"));
+        console.log(chalk.yellow("Next steps:\n"));
+        console.log(`  cd ${projectName}`);
+        await execa("npm", ["install"], { cwd: projectPath, stdio: "inherit" });
+
+        if (withTypeSafety) {
+          console.log("  Generating types:");
+          // run command here:
+          await execa("npm", ["run", "gen:types"], { cwd: projectPath, stdio: "inherit" });
+          console.log("  Running migrations:");
+          await execa("npm", ["run", "migrate"], { cwd: projectPath, stdio: "inherit" });
+          console.log("  Running dev server:");
+          await execa("npm", ["run", "dev"], { cwd: projectPath, stdio: "inherit" });
+          console.log(chalk.gray("\n💡 Type safety enabled by default. Use --no-typesafe to skip.\n"));
+        } else {
+          console.log("  Running migrations:");
+          await execa("npm", ["run", "migrate"], { cwd: projectPath, stdio: "inherit" });
+          console.log("  Running dev server:");
+          await execa("npm", ["run", "dev"], { cwd: projectPath, stdio: "inherit" });
+          console.log(chalk.gray("\n💡 JavaScript mode (no TypeScript). Remove --no-typesafe for full type safety.\n"));
+        }
       }
 
 
   } catch (err) {
-    spinner.fail(chalk.red("Setup failed."));
+    console.error(chalk.red("✗ Setup failed."));
     console.error(err);
     process.exit(1);
   }
