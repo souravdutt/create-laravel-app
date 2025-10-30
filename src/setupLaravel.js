@@ -10,9 +10,12 @@
 
 import os from "os";
 import fs from "fs";
+import https from "https";
 import path from "path";
 import { execSync } from "child_process";
 import { fileURLToPath } from "url";
+import * as tar from "tar";
+import AdmZip from "adm-zip";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,6 +37,28 @@ function run(cmd, cwd = process.cwd()) {
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
+// Download file using Node.js https module
+async function downloadFile(url, dest) {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(dest);
+    https.get(url, (response) => {
+      // Handle redirects
+      if (response.statusCode === 302 || response.statusCode === 301) {
+        return downloadFile(response.headers.location, dest).then(resolve).catch(reject);
+      }
+      
+      response.pipe(file);
+      file.on('finish', () => {
+        file.close();
+        resolve();
+      });
+    }).on('error', (err) => {
+      fs.unlinkSync(dest);
+      reject(err);
+    });
+  });
 }
 
 // ---------------- DETECT OS ----------------
@@ -58,14 +83,20 @@ async function setupBinaries() {
   if (!fs.existsSync(PHP_BIN)) {
     log(`⬇️  Downloading PHP binary for ${os}...`);
     const archivePath = path.join(BIN_DIR, filename);
-    run(`curl -L ${url} -o ${archivePath}`);
+    await downloadFile(url, archivePath);
 
     log("📦 Extracting PHP binary...");
 
     if (ext === "zip") {
-      run(`unzip -o ${archivePath} -d ${BIN_DIR}`);
+      // Use adm-zip for Windows
+      const zip = new AdmZip(archivePath);
+      zip.extractAllTo(BIN_DIR, true);
     } else {
-      run(`tar -xzf ${archivePath} -C ${BIN_DIR}`);
+      // Use tar for Unix-like systems
+      await tar.x({
+        file: archivePath,
+        cwd: BIN_DIR,
+      });
     }
 
     // Find PHP binary path
@@ -92,7 +123,7 @@ async function setupBinaries() {
   if (!fs.existsSync(COMPOSER_BIN)) {
     // Download Composer
     log("⬇️  Downloading Composer...");
-    run(`curl -L ${COMPOSER_URL} -o ${COMPOSER_BIN}`);
+    await downloadFile(COMPOSER_URL, COMPOSER_BIN);
     fs.chmodSync(COMPOSER_BIN, 0o755);
   } else {
     log("✅ Composer binary already exists. Skipping download.\n");

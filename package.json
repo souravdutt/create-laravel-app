@@ -25,6 +25,7 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "chalk": "^5.6.2",
     "execa": "^9.6.0",
     "fs-extra": "^11.3.2",
